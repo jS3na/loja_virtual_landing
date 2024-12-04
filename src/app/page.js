@@ -1,101 +1,153 @@
-import Image from "next/image";
+"use client"
+
+import { useEffect, useState } from "react"
+import Image from "next/image"
+import api from "@/utils/api"
+import CartLogo from '@/images/cart-logo.png'
+import { ProdutoCard } from "@/components/ProdutoCard"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [produtos, setProdutos] = useState([])
+  const [promocoes, setPromocoes] = useState([])
+  const [categorias, setCategorias] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [filteredProdutos, setFilteredProdutos] = useState([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("")
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  useEffect(() => {
+    fetchProdutos()
+    fetchCategorias()
+    fetchPromocoes()
+  }, [])
+
+  useEffect(() => {
+    filterProdutos()
+
+    console.log(produtos)
+    console.log(categorias)
+    console.log(promocoes)
+  }, [produtos, searchTerm, selectedCategory])
+
+  useEffect(() => {
+
+    console.log(produtos)
+    console.log(categorias)
+    console.log(promocoes)
+  }, [promocoes])
+
+  const fetchProdutos = async () => {
+    setIsLoading(true)
+    try {
+      const response = await api.get("/produtos")
+      setProdutos(response.data)
+    } catch (error) {
+      console.error("Erro ao buscar produtos:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCategorias = async () => {
+    setIsLoading(true)
+    try {
+      const response = await api.get("/categorias")
+      setCategorias(response.data)
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchPromocoes = async () => {
+    setIsLoading(true)
+    try {
+      const response = await api.get("/promocoes")
+      setPromocoes(response.data)
+    } catch (error) {
+      console.error("Erro ao buscar promocoes:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const filterProdutos = () => {
+    let filtered = produtos
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.nome.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter(product => product.categoria.id.toString() === selectedCategory)
+    }
+    setFilteredProdutos(filtered)
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 bg-indigo-50">
+      <header className="text-center mb-12 bg-gradient-to-r from-indigo-600 to-blue-500 text-white py-8 rounded-lg shadow-lg">
+        <Image
+          src={CartLogo}
+          alt="Logo da Loja"
+          width={120}
+          height={120}
+          className="mx-auto mb-4 bg-white p-2 rounded-full"
+        />
+        <h1 className="text-4xl font-bold mb-2">Bem-vindo à Nossa Loja Virtual</h1>
+        <p className="text-xl">Descubra ofertas incríveis e produtos de qualidade!</p>
+      </header>
+
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <input
+          type="text"
+          placeholder="Buscar produtos..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-grow px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        />
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="w-full md:w-[200px] px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-indigo-800"
+        >
+          <option value="">Todas as categorias</option>
+          {categorias.map((categoria) => (
+            <option key={categoria.id} value={categoria.id.toString()}>
+              {categoria.nome}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold mb-4 text-indigo-800">Promoções</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {promocoes.map((promocao) => (
+            <ProdutoCard
+              key={promocao.id}
+              product={promocao.produto}
+              isPromotion
+              promoPrice={promocao.preco_promocao}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-semibold mb-4 text-indigo-800">Nossos Produtos</h2>
+        {isLoading ? (
+          <p className="text-center text-indigo-600">Carregando produtos...</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProdutos.map((produto) => (
+              <ProdutoCard key={produto.id} product={produto} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
-  );
+  )
 }
+
